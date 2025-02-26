@@ -1,6 +1,7 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import MetaData
+from sqlalchemy.dialects.mysql import DATETIME
 
 naming_convention = {
     "ix": 'ix_%(column_0_label)s',
@@ -53,7 +54,7 @@ class Reservation(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.user_id"), nullable=False)
     reservation_status = db.Column(db.Enum("confirm", "none", "cancel", name="modified_type_enum"), nullable=True)
 
-    created_at = db.Column(db.DateTime, nullable=True)
+    created_at = db.Column(DATETIME(fsp=6), nullable=True)
     created_by = db.Column(db.String(16), nullable=True)
-    modified_at = db.Column(db.DateTime, nullable=True)
+    modified_at = db.Column(DATETIME(fsp=6), nullable=True)
     modified_by = db.Column(db.String(16), nullable=True)
