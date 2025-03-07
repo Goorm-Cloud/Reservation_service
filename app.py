@@ -61,3 +61,6 @@ def create_app():
 
 
     return app
+
+# ✅ Gunicorn이 실행할 Flask 애플리케이션 객체
+app = create_app()
