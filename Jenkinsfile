@@ -39,8 +39,8 @@ pipeline {
                         string(credentialsId: 'env_secret', variable: 'ENV_SECRET')
                     ]) {
                         // 환경 변수 파일 및 config.py 생성
-                        sh 'echo "$CONFIG_SECRET" > $WORKSPACE/app/config.py'
-                        sh 'echo "$ENV_SECRET" > $WORKSPACE/app/.env'
+                        sh 'echo "$CONFIG_SECRET" > $WORKSPACE/config.py'
+                        sh 'echo "$ENV_SECRET" > $WORKSPACE/.env'
                     }
                 }
             }
