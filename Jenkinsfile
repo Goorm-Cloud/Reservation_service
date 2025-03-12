@@ -35,8 +35,8 @@ pipeline {
                     sh 'chmod -R 777 $WORKSPACE'
 
                     withCredentials([
-                        string(credentialsId: 'config_secret', variable: 'CONFIG_SECRET'),
-                        string(credentialsId: 'env_secret', variable: 'ENV_SECRET')
+                        file(credentialsId: 'config_secret', variable: 'CONFIG_SECRET'),
+                        file(credentialsId: 'env_secret', variable: 'ENV_SECRET')
                     ]) {
                         // 환경 변수 파일 및 config.py 생성
                         sh 'cp $CONFIG_FILE $WORKSPACE/config.py'  // $WORKSPACE/ 경로에 복사
