@@ -39,9 +39,12 @@ pipeline {
                         file(credentialsId: 'env_secret', variable: 'ENV_SECRET')
                     ]) {
                         // 환경 변수 파일 및 config.py 생성
-                        sh 'cp $CONFIG_FILE $WORKSPACE/config.py'  // $WORKSPACE/ 경로에 복사
+                        sh 'echo "CONFIG_FILE path: $CONFIG_FILE"'  // Secret file 경로 확인
+                        sh 'ls -la $CONFIG_FILE'  // 파일 존재 여부 확인
+
+                        sh 'cp $CONFIG_FILE $WORKSPACE/config.py'  // Secret file 복사
                         sh 'echo "$ENV_SECRET" > $WORKSPACE/.env'
-                        sh 'chmod 600 $WORKSPACE/config.py $WORKSPACE/.env'
+                        sh 'chmod 600 $WORKSPACE/config.py $WORKSPACE/.env
                     }
                 }
             }
