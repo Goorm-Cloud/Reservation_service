@@ -113,6 +113,8 @@ pipeline {
                 git credentialsId: GITCREDENTIAL, url: GITSSHADD, branch: 'main'
                 sh "git config --local user.email ${GITMAIL}"
                 sh "git config --local user.name ${GITNAME}"
+                // Jenkins는 기본적으로 jenkins 사용자 권한으로 실행되므로, --global을 사용하면 루트 권한 문제 또는 Git 설정 충돌이 발생할 가능성이 있음.
+
                 sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
 
                 sh "git add ."
@@ -132,96 +134,101 @@ pipeline {
             }
         }
 
-
-    }
-
-    // 파이프라인 빌드 성공시 Discord 로 알림 메시지 전송
-    post {
-        success {
-            script {
-                def discordMessage = """{
-                    "username": "Jenkins",
-                    "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
-                    "embeds": [{
-                        "title": "✅ Jenkins Build 성공!",
-                        "description": "파이프라인 빌드가 성공적으로 완료되었습니다.",
-                        "color": 3066993,
-                        "fields": [
-                            {
-                                "name": "프로젝트",
-                                "value": "Reservation Service",
-                                "inline": true
+        // 파이프라인 빌드 성공시 Discord 로 알림 메시지 전송
+        stage('Send Discord Notification') {
+            steps {
+                script {
+                    def discordMessage = """{
+                        "username": "Jenkins",
+                        "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
+                        "embeds": [{
+                            "title": "✅ Jenkins Build 성공!",
+                            "description": "파이프라인 빌드가 성공적으로 완료되었습니다.",
+                            "color": 3066993,
+                            "fields": [
+                                {
+                                    "name": "프로젝트",
+                                    "value": "Reservation Service",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "빌드 번호",
+                                    "value": "${currentBuild.number}",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "ECR 이미지",
+                                    "value": "${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}",
+                                    "inline": false
+                                },
+                                {
+                                    "name": "커밋 로그",
+                                    "value": "[GitHub Repository](${GITWEBADD})",
+                                    "inline": false
+                                }
+                            ],
+                            "footer": {
+                                "text": "Jenkins CI/CD",
+                                "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
                             },
-                            {
-                                "name": "빌드 번호",
-                                "value": "${currentBuild.number}",
-                                "inline": true
-                            },
-                            {
-                                "name": "ECR 이미지",
-                                "value": "${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}",
-                                "inline": false
-                            },
-                            {
-                                "name": "커밋 로그",
-                                "value": "[GitHub Repository](${GITWEBADD})",
-                                "inline": false
-                            }
-                        ],
-                        "footer": {
-                            "text": "Jenkins CI/CD",
-                            "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
-                        },
-                        "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
-                    }]
-                }"""
+                            "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
+                        }]
+                    }"""
 
-                sh """
-                    curl -X POST -H "Content-Type: application/json" \
-                    -d '${discordMessage}' \
-                    ${DISCORD_WEBHOOK}
-                """
+                    sh """
+                        curl -X POST -H "Content-Type: application/json" \
+                        -d '${discordMessage}' \
+                        ${DISCORD_WEBHOOK}
+                    """
+                }
             }
         }
-        failure {
-            script {
-                def discordMessage = """{
-                    "username": "Jenkins",
-                    "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
-                    "embeds": [{
-                        "title": "❌ Jenkins Build 실패!",
-                        "description": "파이프라인 빌드에 실패하였습니다.",
-                        "color": 15158332,
-                        "fields": [
-                            {
-                                "name": "프로젝트",
-                                "value": "Reservation Service",
-                                "inline": true
-                            },
-                            {
-                                "name": "빌드 번호",
-                                "value": "${currentBuild.number}",
-                                "inline": true
-                            },
-                            {
-                                "name": "GitHub Repo",
-                                "value": "[Repository Link](${GITWEBADD})",
-                                "inline": false
-                            }
-                        ],
-                        "footer": {
-                            "text": "Jenkins CI/CD",
-                            "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
-                        },
-                        "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
-                    }]
-                }"""
+    }
 
-                sh """
-                    curl -X POST -H "Content-Type: application/json" \
-                    -d '${discordMessage}' \
-                    ${DISCORD_WEBHOOK}
-                """
+    post {
+        failure {
+            stage('Send Failure Notification to Discord') {
+                steps {
+                    script {
+                        def discordMessage = """{
+                            "username": "Jenkins",
+                            "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
+                            "embeds": [{
+                                "title": "❌ Jenkins Build 실패!",
+                                "description": "파이프라인 빌드에 실패하였습니다.",
+                                "color": 15158332,
+                                "fields": [
+                                    {
+                                        "name": "프로젝트",
+                                        "value": "Reservation Service",
+                                        "inline": true
+                                    },
+                                    {
+                                        "name": "빌드 번호",
+                                        "value": "${currentBuild.number}",
+                                        "inline": true
+                                    },
+                                    {
+                                        "name": "GitHub Repo",
+                                        "value": "[Repository Link](${GITWEBADD})",
+                                        "inline": false
+                                    }
+                                ],
+                                "footer": {
+                                    "text": "Jenkins CI/CD",
+                                    "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
+                                },
+                                "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
+                            }]
+                        }"""
+
+                        sh """
+                            curl -X POST -H "Content-Type: application/json" \
+                            -d '${discordMessage}' \
+                            ${DISCORD_WEBHOOK}
+                        """
+                    }
+                }
             }
         }
     }
