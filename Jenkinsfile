@@ -27,6 +27,17 @@ pipeline {
             }
         }
 
+        // Restore .gitignore
+        stage('Restore .gitignore') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
+                        sh 'echo "$GITIGNORE_CONTENT" > $WORKSPACE/.gitignore'
+                    }
+                }
+            }
+        }
+
         // config.py .env 파일 가져오기
         stage('Create config.py & .env') {
             steps {
