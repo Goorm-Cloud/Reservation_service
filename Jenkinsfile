@@ -113,7 +113,7 @@ pipeline {
                 git credentialsId: GITCREDENTIAL, url: GITSSHADD, branch: 'main'
                 sh "git config --global user.email ${GITMAIL}"
                 sh "git config --global user.name ${GITNAME}"
-                sh "sed -i 's@${DOCKERHUB}:.*@${DOCKERHUB}:${currentBuild.number}@g' reservation.yml"
+                sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yml"
 
                 sh "git add ."
                 sh "git branch -M main"
