@@ -7,7 +7,7 @@ WORKDIR /app
 RUN pip install --upgrade pip
 
 # 애플리케이션 코드 복사
-COPY . /app
+COPY . .
 
 # Jenkins에서 생성한 config.py 및 .env 파일을 컨테이너에 포함
 # (Jenkins 파이프라인에서 config.py와 .env를 빌드 단계에서 생성하므로 Dockerfile에서는 별도로 복사하지 않음)
