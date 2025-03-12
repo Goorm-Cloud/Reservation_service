@@ -31,16 +31,16 @@ pipeline {
         stage('Create config.py & .env') {
             steps {
                 script {
-                    // /app 디렉토리가 없으면 생성
-                    sh 'mkdir -p /app'
+                    // 현재 작업 디렉토리 안에 app 디렉토리 생성
+                    sh 'mkdir -p $WORKSPACE/app'
 
                     withCredentials([
                         string(credentialsId: 'config_secret', variable: 'CONFIG_SECRET'),
                         string(credentialsId: 'env_secret', variable: 'ENV_SECRET')
                     ]) {
-                        // config.py 및 .env 파일 생성
-                        sh 'echo "$CONFIG_SECRET" > /app/config.py'
-                        sh 'echo "$ENV_SECRET" > /app/.env'
+                        // 환경 변수 파일 및 config.py 생성
+                        sh 'echo "$CONFIG_SECRET" > $WORKSPACE/app/config.py'
+                        sh 'echo "$ENV_SECRET" > $WORKSPACE/app/.env'
                     }
                 }
             }
