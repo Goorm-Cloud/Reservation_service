@@ -107,7 +107,7 @@ pipeline {
             }
         }
 
-
+        // ssh-key gen 해야 매니페스트 파일 수정 가능
         stage('EKS manifest file update') {
             steps {
                 git credentialsId: GITCREDENTIAL, url: GITSSHADD, branch: 'main'
