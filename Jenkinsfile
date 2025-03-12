@@ -43,7 +43,7 @@ pipeline {
                         sh 'ls -la $CONFIG_FILE'  // 파일 존재 여부 확인
 
                         sh 'cp $CONFIG_FILE $WORKSPACE/config.py'  // Secret file 복사
-                        sh 'cp $ENV_FILE $WORKSPACE/.env.py'  // .env file 복사
+                        sh 'cp $ENV_FILE $WORKSPACE/.env'  // .env file 복사
                         sh 'chmod 600 $WORKSPACE/config.py'
                         sh 'chmod 600 $WORKSPACE/.env'
                     }
