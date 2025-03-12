@@ -111,8 +111,8 @@ pipeline {
         stage('EKS manifest file update') {
             steps {
                 git credentialsId: GITCREDENTIAL, url: GITSSHADD, branch: 'main'
-                sh "git config --global user.email ${GITMAIL}"
-                sh "git config --global user.name ${GITNAME}"
+                sh "git config --local user.email ${GITMAIL}"
+                sh "git config --local user.name ${GITNAME}"
                 sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
 
                 sh "git add ."
