@@ -44,8 +44,8 @@ pipeline {
 
                         sh 'cp $CONFIG_FILE $WORKSPACE/config.py'  // Secret file 복사
                         sh 'echo "$ENV_SECRET" > $WORKSPACE/.env'
-                        sh 'chmod 600 $WORKSPACE/config.py
-                        sh 'chmod 600 $WORKSPACE/.env
+                        sh 'chmod 600 $WORKSPACE/config.py'
+                        sh 'chmod 600 $WORKSPACE/.env'
                     }
                 }
             }
