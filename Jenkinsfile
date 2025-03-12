@@ -32,15 +32,16 @@ pipeline {
             steps {
                 script {
                     // 현재 작업 디렉토리 안에 app 디렉토리 생성
-                    sh 'mkdir -p $WORKSPACE/app'
+                    sh 'chmod -R 777 $WORKSPACE'
 
                     withCredentials([
                         string(credentialsId: 'config_secret', variable: 'CONFIG_SECRET'),
                         string(credentialsId: 'env_secret', variable: 'ENV_SECRET')
                     ]) {
                         // 환경 변수 파일 및 config.py 생성
-                        sh 'echo "$CONFIG_SECRET" > $WORKSPACE/config.py'
+                        sh 'cp $CONFIG_FILE $WORKSPACE/config.py'  // $WORKSPACE/ 경로에 복사
                         sh 'echo "$ENV_SECRET" > $WORKSPACE/.env'
+                        sh 'chmod 600 $WORKSPACE/config.py $WORKSPACE/.env'
                     }
                 }
             }
