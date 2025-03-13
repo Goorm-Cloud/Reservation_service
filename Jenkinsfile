@@ -83,6 +83,9 @@ pipeline {
         stage('Checkout Manifest Repository') {
             steps {
                 script {
+                    // ✅ Untracked 파일 정리 (브랜치 변경 오류 방지)
+                    sh 'git clean -fd'
+
                     checkout([$class: 'GitSCM', branches: [[name: '*/main']],
                     userRemoteConfigs: [[credentialsId: GITCREDENTIAL, url: GITSSHADD]]])
                 }
