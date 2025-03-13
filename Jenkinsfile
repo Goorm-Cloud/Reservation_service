@@ -20,7 +20,7 @@ pipeline {
             }
         }
 
-        //// ✅ .gitignore을 로컬에서만 적용
+
         //stage('Apply .gitignore Locally') {
         //    steps {
         //        script {
@@ -92,46 +92,46 @@ pipeline {
             }
         }
 
-        // ✅ 이미지 태그 변경
-        stage('Update EKS Manifest') {
-            steps {
-                script {
-                    sh 'git config --local user.email "${GITMAIL}"'
-                    sh 'git config --local user.name "${GITNAME}"'
-
-                    // 최신 변경 사항 가져오기 (덮어쓰기)
-                    sh "git fetch origin main"
-                    sh "git switch main || git checkout main"  // 🔥 `detached HEAD` 상태 방지
-                    sh "git pull --rebase origin main || true"
-                    sh "git reset --hard origin/main"
-
-                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
-                        sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
-                    }
-
-                    // 최신 커밋 확인
-                    sh "git log -n 5 --oneline"
-
-                    // 이미지 태그 변경 (빌드 번호 적용)
-                    sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
-
-                    // 변경 사항 반영
-                    sh "git add ."
-                    sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
-
-                    // 디버깅용 브랜치 상태 확인
-                    sh "git branch"
-                    sh "git status"
-
-                    // push 실행
-                    sh "git push origin main"
-                }
-            }
-        }
+        //// ✅ 이미지 태그 변경
+        //stage('Update EKS Manifest') {
+        //    steps {
+        //        script {
+        //            sh 'git config --local user.email "${GITMAIL}"'
+        //            sh 'git config --local user.name "${GITNAME}"'
+        //
+        //            // 최신 변경 사항 가져오기 (덮어쓰기)
+        //            sh "git fetch origin main"
+        //            sh "git switch main || git checkout main"  // 🔥 `detached HEAD` 상태 방지
+        //            sh "git pull --rebase origin main || true"
+        //            sh "git reset --hard origin/main"
+        //
+        //            withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
+        //                sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
+        //            }
+        //
+        //            // 최신 커밋 확인
+        //            sh "git log -n 5 --oneline"
+        //
+        //            // 이미지 태그 변경 (빌드 번호 적용)
+        //            sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
+        //
+        //            // 변경 사항 반영
+        //            sh "git add ."
+        //            sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
+        //
+        //            // 디버깅용 브랜치 상태 확인
+        //            sh "git branch"
+        //            sh "git status"
+        //
+        //            // push 실행
+        //            sh "git push origin main"
+        //        }
+        //    }
+        //}
     }
 
 
-    // ✅ 디스코드 알림 (이전 스타일로 복구)
+    // ✅ 디스코드 알림
     post {
         success {
             script {
