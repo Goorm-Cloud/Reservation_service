@@ -3,55 +3,38 @@ pipeline {
     environment {
         GITNAME = 'rttitity'
         GITMAIL = 'jinwoo25803@gmail.com'
-        GITWEBADD = 'https://github.com/Goorm-Cloud/Reservation_service.git'        // 소스코드 레포지토리 주소
-        GITSSHADD = 'git@github.com:Goorm-Cloud/manifast-reservation.git'                 // 매니페스트 레포지토리 주소 (https 안댐)
+        GITWEBADD = 'https://github.com/Goorm-Cloud/Reservation_service.git'
+        GITSSHADD = 'git@github.com:Goorm-Cloud/manifast-reservation.git'
         GITCREDENTIAL = 'git_cre_zinucha'
         ECR_REGISTRY = '651706756261.dkr.ecr.ap-northeast-2.amazonaws.com'
         ECR_REPO = 'reservation_service'
-        AWS_CREDENTIAL = 'zinucha_AWS_Credentials' // AWS 자격증명 설정 (Jenkins Credential)
+        AWS_CREDENTIAL = 'zinucha_AWS_Credentials'
         DISCORD_WEBHOOK = credentials('jenkins-discord-webhook')
     }
     stages {
         stage('Checkout Github') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [],
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']],
                 userRemoteConfigs: [[credentialsId: GITCREDENTIAL, url: GITWEBADD]]])
-            }
-            post {
-                failure {
-                    sh "echo clone failed"
-                }
-                success {
-                    sh "echo clone success"
-                }
             }
         }
 
-        // config.py .env 파일 가져오기
         stage('Create config.py & .env') {
             steps {
                 script {
-                    // 현재 작업 디렉토리 안에 app 디렉토리 생성
                     sh 'chmod -R 777 $WORKSPACE'
-
                     withCredentials([
                         file(credentialsId: 'config_secret', variable: 'CONFIG_FILE'),
                         file(credentialsId: 'env_secret', variable: 'ENV_FILE')
                     ]) {
-                        // 환경 변수 파일 및 config.py 생성
-                        sh 'echo "CONFIG_FILE path: $CONFIG_FILE"'  // Secret file 경로 확인
-                        sh 'ls -la $CONFIG_FILE'  // 파일 존재 여부 확인
-
-                        sh 'cp $CONFIG_FILE $WORKSPACE/config.py'  // Secret file 복사
-                        sh 'cp $ENV_FILE $WORKSPACE/.env'  // .env file 복사
-                        sh 'chmod 600 $WORKSPACE/config.py'
-                        sh 'chmod 600 $WORKSPACE/.env'
+                        sh 'cp $CONFIG_FILE $WORKSPACE/config.py'
+                        sh 'cp $ENV_FILE $WORKSPACE/.env'
+                        sh 'chmod 600 $WORKSPACE/config.py $WORKSPACE/.env'
                     }
                 }
             }
         }
 
-        // ECR login stage
         stage('AWS ECR Login') {
             steps {
                 script {
@@ -60,89 +43,71 @@ pipeline {
                     }
                 }
             }
-            post {
-                failure {
-                    sh "echo ECR login failed"
-                }
-                success {
-                    sh "echo ECR login success"
-                }
-            }
         }
 
-        // 도커 이미지 빌드 stage
         stage('Build Docker Image') {
             steps {
                 sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number} ."
                 sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:latest ."
-                // currentBuild.number 젠킨스가 제공하는 빌드넘버 변수
-                // oolralra/fast:<빌드넘버> 와 같은 이미지가 만들어질 예정.
-
-            }
-            post {
-                failure {
-                    sh "echo image build failed"
-                }
-                success {
-                    sh "echo image build success"
-                }
             }
         }
-
 
         stage('Push Docker Image to ECR') {
             steps {
                 sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
                 sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:latest"
             }
-            post {
-                failure {
-                    sh "docker image rm -f ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
-                    sh "docker image rm -f ${ECR_REGISTRY}/${ECR_REPO}:latest"
-                    sh "echo push failed"
-                    // 성공하든 실패하든 로컬에 있는 Docker image 는 삭제
-                }
-                success {
-                    sh "docker image rm -f ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
-                    sh "docker image rm -f ${ECR_REGISTRY}/${ECR_REPO}:latest"
-                    sh "echo push success"
-                    // 성공하든 실패하든 로컬에 있는 Docker image 는 삭제
+        }
 
+        // ✅ workspace 정리 (매니페스트 레포지토리 checkout 전)
+        stage('Clean Workspace for Manifest Repo') {
+            steps {
+                script {
+                    deleteDir()  // 기존 workspace 삭제
                 }
             }
         }
 
-        // ssh-key gen 해야 매니페스트 파일 수정 가능
+        stage('Checkout Manifest Repository') {
+            steps {
+                script {
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']],
+                    userRemoteConfigs: [[credentialsId: GITCREDENTIAL, url: GITSSHADD]]])
+                }
+            }
+        }
+
         stage('EKS manifest file update') {
             steps {
-                git credentialsId: GITCREDENTIAL, url: GITSSHADD, branch: 'main'
-                sh "git config --local user.email ${GITMAIL}"
-                sh "git config --local user.name ${GITNAME}"
-                // Jenkins는 기본적으로 jenkins 사용자 권한으로 실행되므로, --global을 사용하면 루트 권한 문제 또는 Git 설정 충돌이 발생할 가능성이 있음.
+                script {
+                    sh "git config --local user.email ${GITMAIL}"
+                    sh "git config --local user.name ${GITNAME}"
 
-                sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
+                    // 최신 상태 유지
+                    sh "git fetch origin main"
+                    sh "git reset --hard origin/main"
 
-                sh "git add ./reservation.yaml"
-                sh "git branch -M main"
-                sh "git commit -m 'fixed tag ${currentBuild.number}'"
-                sh "git remote remove origin"
-                sh "git remote add origin ${GITSSHADD}"
-                sh "git push origin main"
-            }
-            post {
-                failure {
-                    sh "echo manifest update failed"
-                }
-                success {
-                    sh "echo manifest update success"
+                    // 이미지 태그 업데이트
+                    sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
+
+                    // 변경사항 커밋 & 푸시
+                    sh "git add reservation.yaml"
+                    sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
+                    sh "git push origin main"
                 }
             }
         }
 
-
+        // ✅ 매니페스트 파일 업로드 후 reservation_service 삭제
+        stage('Clean Workspace After Manifest Update') {
+            steps {
+                script {
+                    deleteDir()  // workspace 정리
+                }
+            }
+        }
     }
 
-    // 파이프라인 빌드 성공시 Discord 로 알림 메시지 전송
     post {
         success {
             script {
@@ -154,26 +119,10 @@ pipeline {
                         "description": "파이프라인 빌드가 성공적으로 완료되었습니다.",
                         "color": 3066993,
                         "fields": [
-                            {
-                                "name": "프로젝트",
-                                "value": "Reservation Service",
-                                "inline": true
-                            },
-                            {
-                                "name": "빌드 번호",
-                                "value": "${currentBuild.number}",
-                                "inline": true
-                            },
-                            {
-                                "name": "ECR 이미지",
-                                "value": "${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}",
-                                "inline": false
-                            },
-                            {
-                                "name": "커밋 로그",
-                                "value": "[GitHub Repository](${GITWEBADD})",
-                                "inline": false
-                            }
+                            {"name": "프로젝트", "value": "Reservation Service", "inline": true},
+                            {"name": "빌드 번호", "value": "${currentBuild.number}", "inline": true},
+                            {"name": "ECR 이미지", "value": "${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}", "inline": false},
+                            {"name": "커밋 로그", "value": "[GitHub Repository](${GITWEBADD})", "inline": false}
                         ],
                         "footer": {
                             "text": "Jenkins CI/CD",
@@ -183,11 +132,7 @@ pipeline {
                     }]
                 }"""
 
-                sh """
-                    curl -X POST -H "Content-Type: application/json" \
-                    -d '${discordMessage}' \
-                    ${DISCORD_WEBHOOK}
-                """
+                sh "curl -X POST -H 'Content-Type: application/json' -d '${discordMessage}' ${DISCORD_WEBHOOK}"
             }
         }
         failure {
@@ -200,21 +145,9 @@ pipeline {
                         "description": "파이프라인 빌드에 실패하였습니다.",
                         "color": 15158332,
                         "fields": [
-                            {
-                                "name": "프로젝트",
-                                "value": "Reservation Service",
-                                "inline": true
-                            },
-                            {
-                                "name": "빌드 번호",
-                                "value": "${currentBuild.number}",
-                                "inline": true
-                            },
-                            {
-                                "name": "GitHub Repo",
-                                "value": "[Repository Link](${GITWEBADD})",
-                                "inline": false
-                            }
+                            {"name": "프로젝트", "value": "Reservation Service", "inline": true},
+                            {"name": "빌드 번호", "value": "${currentBuild.number}", "inline": true},
+                            {"name": "GitHub Repo", "value": "[Repository Link](${GITWEBADD})", "inline": false}
                         ],
                         "footer": {
                             "text": "Jenkins CI/CD",
@@ -224,11 +157,7 @@ pipeline {
                     }]
                 }"""
 
-                sh """
-                    curl -X POST -H "Content-Type: application/json" \
-                    -d '${discordMessage}' \
-                    ${DISCORD_WEBHOOK}
-                """
+                sh "curl -X POST -H 'Content-Type: application/json' -d '${discordMessage}' ${DISCORD_WEBHOOK}"
             }
         }
     }
