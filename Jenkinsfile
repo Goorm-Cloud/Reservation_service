@@ -91,6 +91,7 @@ pipeline {
 
                     // ✅ 최신 변경 사항 가져오기
                     sh "git fetch origin main"
+                    sh "git checkout main"  // 🔥 `detached HEAD` 상태 방지
                     sh "git pull --rebase origin main || true"
                     sh "git reset --hard origin/main"
 
@@ -103,6 +104,11 @@ pipeline {
                     // ✅ 변경 사항 반영 및 push
                     sh "git add reservation.yaml"
                     sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
+
+                    // ✅ 다시 `main` 브랜치인지 확인
+                    sh "git branch"
+
+                    // ✅ push 실행
                     sh "git push origin main"
                 }
             }
