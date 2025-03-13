@@ -59,7 +59,7 @@ pipeline {
             }
         }
 
-        // ✅ workspace 정리 (매니페스트 레포지토리 checkout 전)
+        // workspace 정리 (매니페스트 레포지토리 checkout 전)
         stage('Clean Workspace for Manifest Repo') {
             steps {
                 script {
@@ -102,7 +102,7 @@ pipeline {
             }
         }
 
-        // ✅ 매니페스트 파일 업로드 후 reservation_service 삭제
+        // 매니페스트 파일 업로드 후 reservation_service 삭제
         stage('Clean Workspace After Manifest Update') {
             steps {
                 script {
@@ -112,6 +112,7 @@ pipeline {
         }
     }
 
+    // 디스코드 알림
     post {
         success {
             script {
