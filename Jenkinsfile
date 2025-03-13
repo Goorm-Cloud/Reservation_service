@@ -27,17 +27,6 @@ pipeline {
             }
         }
 
-        // Restore .gitignore
-        stage('Restore .gitignore') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
-                        sh 'echo "$GITIGNORE_CONTENT" > $WORKSPACE/.gitignore'
-                    }
-                }
-            }
-        }
-
         // config.py .env 파일 가져오기
         stage('Create config.py & .env') {
             steps {
@@ -124,21 +113,39 @@ pipeline {
         }
 
         // ssh-key gen 해야 매니페스트 파일 수정 가능
+        // Checkout Manifest Repository
+        stage('Checkout Manifest Repository') {
+            steps {
+                script {
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']], userRemoteConfigs: [[credentialsId: GITCREDENTIAL, url: GITSSHADD]]])
+                }
+            }
+        }
+
+        // Restore .gitignore (매니페스트 레포지토리에서 생성)
+        stage('Restore .gitignore in Manifest Repo') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
+                        sh 'echo "$GITIGNORE_CONTENT" > $WORKSPACE/.gitignore'
+                    }
+                }
+            }
+        }
+
+        // EKS manifest file update
         stage('EKS manifest file update') {
             steps {
-                git credentialsId: GITCREDENTIAL, url: GITSSHADD, branch: 'main'
-                sh "git config --local user.email ${GITMAIL}"
-                sh "git config --local user.name ${GITNAME}"
-                // Jenkins는 기본적으로 jenkins 사용자 권한으로 실행되므로, --global을 사용하면 루트 권한 문제 또는 Git 설정 충돌이 발생할 가능성이 있음.
+                script {
+                    sh "git config --local user.email ${GITMAIL}"
+                    sh "git config --local user.name ${GITNAME}"
 
-                sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
+                    sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
 
-                sh "git add ."
-                sh "git branch -M main"
-                sh "git commit -m 'fixed tag ${currentBuild.number}'"
-                sh "git remote remove origin"
-                sh "git remote add origin ${GITSSHADD}"
-                sh "git push origin main"
+                    sh "git add .gitignore reservation.yaml"
+                    sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
+                    sh "git push origin main"
+                }
             }
             post {
                 failure {
@@ -149,8 +156,6 @@ pipeline {
                 }
             }
         }
-
-
     }
 
     // 파이프라인 빌드 성공시 Discord 로 알림 메시지 전송
