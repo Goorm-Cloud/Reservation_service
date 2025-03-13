@@ -147,7 +147,7 @@ pipeline {
 
                     sh "git add .gitignore reservation.yaml"
                     sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
-                    sh "git push origin main"
+                    sh "git push --force origin main"
                 }
             }
             post {
