@@ -97,7 +97,7 @@ pipeline {
 
                     // 변경사항 커밋 및 푸시
                     sh 'git add reservation.yaml'
-                    sh 'git commit -m "Update manifest with new image tag: ${currentBuild.number}" || true'
+                    sh 'git commit -m "Update manifest with new image tag: ${currentBuild.number}"'
 
                     // 변경사항이 있을 경우 --rebase
                     sh 'git pull --rebase --autostash origin main || true'
