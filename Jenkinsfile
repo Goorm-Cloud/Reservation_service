@@ -12,7 +12,6 @@ pipeline {
     }
 
     stages {
-        // ✅ 애플리케이션 소스코드 체크아웃
         stage('Checkout Application Repository') {
             steps {
                 checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [],
@@ -20,20 +19,20 @@ pipeline {
             }
         }
 
-        // ✅ .gitignore 파일 적용 (Secret Text)
-        stage('Apply .gitignore from Credentials') {
+        // ✅ .gitignore 적용 (로컬에서만, 원격에 영향 없음)
+        stage('Apply .gitignore Locally') {
             steps {
                 script {
                     withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
-                        sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
-                        sh 'git rm --cached .gitignore || true'  // 기존 Git 추적 해제
-                        sh 'git update-index --assume-unchanged .gitignore'
+                        sh '''
+                        echo "$GITIGNORE_CONTENT" > .gitignore
+                        '''
                     }
                 }
             }
         }
 
-        // ✅ config.py & .env 파일 생성 (Secret File 활용)
+        // ✅ config.py & .env 파일 생성
         stage('Create config.py & .env') {
             steps {
                 script {
@@ -49,31 +48,13 @@ pipeline {
             }
         }
 
-        // ✅ AWS ECR 로그인
-        stage('AWS ECR Login') {
-            steps {
-                script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIAL]]) {
-                        sh "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
-                    }
-                }
-            }
-        }
-
-        // ✅ Docker 이미지 빌드 및 푸시
+        // ✅ Docker Image 빌드 및 푸시
         stage('Build & Push Docker Image') {
             steps {
                 script {
                     sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number} ."
                     sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
                 }
-            }
-        }
-
-        // ✅ 보안 강화를 위해 config.py & .env 삭제
-        stage('Cleanup Sensitive Files') {
-            steps {
-                sh "rm -f config.py .env"
             }
         }
 
@@ -87,28 +68,25 @@ pipeline {
             }
         }
 
-        // ✅ 매니페스트 파일 업데이트 (이미지 태그 변경)
+        // ✅ 이미지 태그 변경
         stage('Update EKS Manifest') {
             steps {
                 script {
-                    sh "git config --local user.email ${GITMAIL}"
-                    sh "git config --local user.name ${GITNAME}"
-                    sh "git fetch origin main"
-                    sh "git reset --hard origin/main"
-
-                    // ✅ 이미지 태그 변경
-                    sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
-
-                    // ✅ 변경 사항 커밋 (자동 충돌 해결 & rebase 적용)
-                    sh "git add reservation.yaml"
-                    sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}' || echo 'No changes to commit'"
-                    sh "git pull --rebase --autostash origin main || true"
-                    sh "git push origin main"
+                    sh '''
+                    git config --local user.email ${GITMAIL}
+                    git config --local user.name ${GITNAME}
+                    git fetch origin main
+                    git reset --hard origin/main
+                    sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml
+                    git add reservation.yaml
+                    git commit -m "Update manifest with new image tag: ${currentBuild.number}" || true
+                    git pull --rebase --autostash origin main || true
+                    git push origin main
+                    '''
                 }
             }
         }
     }
-
     // ✅ 빌드 성공 시 Discord 알림
     post {
         success {
