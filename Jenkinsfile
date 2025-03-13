@@ -20,16 +20,16 @@ pipeline {
             }
         }
 
-        // ✅ .gitignore을 로컬에서만 적용
-        stage('Apply .gitignore Locally') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
-                        sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
-                    }
-                }
-            }
-        }
+        //// ✅ .gitignore을 로컬에서만 적용
+        //stage('Apply .gitignore Locally') {
+        //    steps {
+        //        script {
+        //            withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
+        //                sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
+        //            }
+        //        }
+        //    }
+        //}
 
         // ✅ config.py & .env 파일 생성
         stage('Create config.py & .env') {
@@ -89,92 +89,96 @@ pipeline {
             }
         }
 
-    //    // ✅ 이미지 태그 변경
-    //    stage('Update EKS Manifest') {
-    //        steps {
-    //            script {
-    //                sh 'git config --local user.email "${GITMAIL}"'
-    //                sh 'git config --local user.name "${GITNAME}"'
-    //
-    //                // 최신 변경 사항 가져오기 (덮어쓰기)
-    //                sh "git fetch origin main"
-    //                sh "git switch main || git checkout main"  // 🔥 `detached HEAD` 상태 방지
-    //                sh "git pull --rebase origin main || true"
-    //                sh "git reset --hard origin/main"
-    //
-    //                // 최신 커밋 확인
-    //                sh "git log -n 5 --oneline"
-    //
-    //                // 이미지 태그 변경 (빌드 번호 적용)
-    //                sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
-    //
-    //                // 변경 사항 반영
-    //                sh "git add ."
-    //                sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
-    //
-    //                // 디버깅용 브랜치 상태 확인
-    //                sh "git branch"
-    //                sh "git status"
-    //
-    //                // push 실행
-    //                sh "git push origin main"
-    //            }
-    //        }
-    //    }
-    //}
-    //
-    //// ✅ 디스코드 알림 (이전 스타일로 복구)
-    //post {
-    //    success {
-    //        script {
-    //            def discordMessage = """{
-    //                "username": "Jenkins",
-    //                "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
-    //                "embeds": [{
-    //                    "title": "✅ Jenkins Build 성공!",
-    //                    "description": "파이프라인 빌드가 성공적으로 완료되었습니다.",
-    //                    "color": 3066993,
-    //                    "fields": [
-    //                        {"name": "프로젝트", "value": "Reservation Service", "inline": true},
-    //                        {"name": "빌드 번호", "value": "${currentBuild.number}", "inline": true},
-    //                        {"name": "ECR 이미지", "value": "${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}", "inline": false},
-    //                        {"name": "커밋 로그", "value": "[GitHub Repository](${GITWEBADD})", "inline": false}
-    //                    ],
-    //                    "footer": {
-    //                        "text": "Jenkins CI/CD",
-    //                        "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
-    //                    },
-    //                    "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
-    //                }]
-    //            }"""
-    //
-    //            sh "curl -X POST -H 'Content-Type: application/json' -d '${discordMessage}' ${DISCORD_WEBHOOK}"
-    //        }
-    //    }
-    //    failure {
-    //        script {
-    //            def discordMessage = """{
-    //                "username": "Jenkins",
-    //                "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
-    //                "embeds": [{
-    //                    "title": "❌ Jenkins Build 실패!",
-    //                    "description": "파이프라인 빌드에 실패하였습니다.",
-    //                    "color": 15158332,
-    //                    "fields": [
-    //                        {"name": "프로젝트", "value": "Reservation Service", "inline": true},
-    //                        {"name": "빌드 번호", "value": "${currentBuild.number}", "inline": true},
-    //                        {"name": "GitHub Repo", "value": "[Repository Link](${GITWEBADD})", "inline": false}
-    //                    ],
-    //                    "footer": {
-    //                        "text": "Jenkins CI/CD",
-    //                        "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
-    //                    },
-    //                    "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
-    //                }]
-    //            }"""
-    //
-    //            sh "curl -X POST -H 'Content-Type: application/json' -d '${discordMessage}' ${DISCORD_WEBHOOK}"
-    //        }
-    //    }
+        // ✅ 이미지 태그 변경
+        stage('Update EKS Manifest') {
+            steps {
+                script {
+                    sh 'git config --local user.email "${GITMAIL}"'
+                    sh 'git config --local user.name "${GITNAME}"'
+
+                    // 최신 변경 사항 가져오기 (덮어쓰기)
+                    sh "git fetch origin main"
+                    sh "git switch main || git checkout main"  // 🔥 `detached HEAD` 상태 방지
+                    sh "git pull --rebase origin main || true"
+                    sh "git reset --hard origin/main"
+
+                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
+                        sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
+                    }
+
+                    // 최신 커밋 확인
+                    sh "git log -n 5 --oneline"
+
+                    // 이미지 태그 변경 (빌드 번호 적용)
+                    sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
+
+                    // 변경 사항 반영
+                    sh "git add ."
+                    sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
+
+                    // 디버깅용 브랜치 상태 확인
+                    sh "git branch"
+                    sh "git status"
+
+                    // push 실행
+                    sh "git push origin main"
+                }
+            }
+        }
+    }
+
+    // ✅ 디스코드 알림 (이전 스타일로 복구)
+    post {
+        success {
+            script {
+                def discordMessage = """{
+                    "username": "Jenkins",
+                    "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
+                    "embeds": [{
+                        "title": "✅ Jenkins Build 성공!",
+                        "description": "파이프라인 빌드가 성공적으로 완료되었습니다.",
+                        "color": 3066993,
+                        "fields": [
+                            {"name": "프로젝트", "value": "Reservation Service", "inline": true},
+                            {"name": "빌드 번호", "value": "${currentBuild.number}", "inline": true},
+                            {"name": "ECR 이미지", "value": "${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}", "inline": false},
+                            {"name": "커밋 로그", "value": "[GitHub Repository](${GITWEBADD})", "inline": false}
+                        ],
+                        "footer": {
+                            "text": "Jenkins CI/CD",
+                            "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
+                        },
+                        "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
+                    }]
+                }"""
+
+                sh "curl -X POST -H 'Content-Type: application/json' -d '${discordMessage}' ${DISCORD_WEBHOOK}"
+            }
+        }
+        failure {
+            script {
+                def discordMessage = """{
+                    "username": "Jenkins",
+                    "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
+                    "embeds": [{
+                        "title": "❌ Jenkins Build 실패!",
+                        "description": "파이프라인 빌드에 실패하였습니다.",
+                        "color": 15158332,
+                        "fields": [
+                            {"name": "프로젝트", "value": "Reservation Service", "inline": true},
+                            {"name": "빌드 번호", "value": "${currentBuild.number}", "inline": true},
+                            {"name": "GitHub Repo", "value": "[Repository Link](${GITWEBADD})", "inline": false}
+                        ],
+                        "footer": {
+                            "text": "Jenkins CI/CD",
+                            "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
+                        },
+                        "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
+                    }]
+                }"""
+
+                sh "curl -X POST -H 'Content-Type: application/json' -d '${discordMessage}' ${DISCORD_WEBHOOK}"
+            }
+        }
     }
 }
