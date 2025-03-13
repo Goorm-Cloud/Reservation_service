@@ -142,6 +142,8 @@ pipeline {
 
                     // 최신 변경 사항 가져오기
                     sh "git pull --rebase origin main || true"
+                    sh "git checkout main" // ✅ main 브랜치로 이동 (detached HEAD 방지)
+                    sh "git reset --hard origin/main"
 
                     sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
 
