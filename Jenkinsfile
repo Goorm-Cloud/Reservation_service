@@ -84,7 +84,7 @@ pipeline {
                     sh "git config --local user.name ${GITNAME}"
 
                     // 최신 상태 유지
-                    sh "git fetch origin main"
+                    h "git checkout main || git checkout -b main"
                     sh "git reset --hard origin/main"
 
                     // 이미지 태그 업데이트
