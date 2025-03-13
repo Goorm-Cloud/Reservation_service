@@ -89,19 +89,21 @@ pipeline {
                     sh 'git config --local user.email "${GITMAIL}"'
                     sh 'git config --local user.name "${GITNAME}"'
 
-                    sh 'git fetch origin main'
-                    sh 'git reset --hard origin/main'
+                    // ✅ 최신 변경 사항 가져오기
+                    sh "git fetch origin main"
+                    sh "git pull --rebase origin main || true"
+                    sh "git reset --hard origin/main"
 
-                    // 이미지 태그 업데이트
-                    sh 'sed -i "s@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g" reservation.yaml'
+                    // ✅ 최신 커밋 확인
+                    sh "git log -n 5 --oneline"
 
-                    // 변경사항 커밋 및 푸시
-                    sh 'git add reservation.yaml'
-                    sh 'git commit -m "Update manifest with new image tag: ${currentBuild.number}"'
+                    // ✅ 이미지 태그 변경 (빌드 번호 적용)
+                    sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
 
-                    // 변경사항이 있을 경우 --rebase
-                    sh 'git pull --rebase --autostash origin main || true'
-                    sh 'git push origin main'
+                    // ✅ 변경 사항 반영 및 push
+                    sh "git add reservation.yaml"
+                    sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
+                    sh "git push origin main"
                 }
             }
         }
