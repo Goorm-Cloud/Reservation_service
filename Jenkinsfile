@@ -11,63 +11,55 @@ pipeline {
         AWS_CREDENTIAL = 'zinucha_AWS_Credentials'
         DISCORD_WEBHOOK = credentials('jenkins-discord-webhook')
     }
+
     stages {
         stage('Checkout Github') {
             steps {
-                checkout([$class: 'GitSCM', branches: [[name: '*/main']],
+                checkout([$class: 'GitSCM', branches: [[name: '*/main']], extensions: [],
                 userRemoteConfigs: [[credentialsId: GITCREDENTIAL, url: GITWEBADD]]])
             }
         }
 
+        // ✅ .gitignore 파일 적용
+        stage('Apply .gitignore from Credentials') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
+                        sh 'echo "$GITIGNORE_CONTENT" > $WORKSPACE/.gitignore'
+                        sh 'git update-index --assume-unchanged $WORKSPACE/.gitignore'
+                    }
+                }
+            }
+        }
+
+        // ✅ config.py & .env 생성 (Secret File 활용)
         stage('Create config.py & .env') {
             steps {
                 script {
-                    sh 'chmod -R 777 $WORKSPACE'
                     withCredentials([
                         file(credentialsId: 'config_secret', variable: 'CONFIG_FILE'),
                         file(credentialsId: 'env_secret', variable: 'ENV_FILE')
                     ]) {
                         sh 'cp $CONFIG_FILE $WORKSPACE/config.py'
                         sh 'cp $ENV_FILE $WORKSPACE/.env'
-                        sh 'chmod 600 $WORKSPACE/config.py $WORKSPACE/.env'
+                        sh 'chmod 600 $WORKSPACE/config.py'
+                        sh 'chmod 600 $WORKSPACE/.env'
                     }
                 }
             }
         }
 
-        stage('AWS ECR Login') {
+        // ✅ Docker Image 빌드 및 Push
+        stage('Build & Push Docker Image') {
             steps {
                 script {
-                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIAL]]) {
-                        sh "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
-                    }
+                    sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number} ."
+                    sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
                 }
             }
         }
 
-        stage('Build Docker Image') {
-            steps {
-                sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number} ."
-                sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:latest ."
-            }
-        }
-
-        stage('Push Docker Image to ECR') {
-            steps {
-                sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
-                sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:latest"
-            }
-        }
-
-        // workspace 정리 (매니페스트 레포지토리 checkout 전)
-        stage('Clean Workspace for Manifest Repo') {
-            steps {
-                script {
-                    deleteDir()  // 기존 workspace 삭제
-                }
-            }
-        }
-
+        // ✅ 매니페스트 레포지토리 체크아웃
         stage('Checkout Manifest Repository') {
             steps {
                 script {
@@ -77,92 +69,75 @@ pipeline {
             }
         }
 
+        // ✅ 이미지 태그 변경
         stage('EKS manifest file update') {
             steps {
                 script {
                     sh "git config --local user.email ${GITMAIL}"
                     sh "git config --local user.name ${GITNAME}"
-
-                    // 최신 변경 사항 가져오기
                     sh "git fetch origin main"
                     sh "git reset --hard origin/main"
 
-                    // ✅ 브랜치가 detached 상태가 아닐 경우 대비하여 main 브랜치 체크아웃
-                    sh "git checkout -B main origin/main"
-                    sh "git branch -M main"
-
-                    // 이미지 태그 업데이트
+                    // 이미지 태그 변경
                     sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
 
-                    // 변경사항 커밋 & 푸시
+                    // `.gitignore` 변경 방지 & 추가 파일 push 방지
                     sh "git add reservation.yaml"
                     sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
-                    sh "git push origin main"
-                }
-            }
-        }
 
-        // 매니페스트 파일 업로드 후 reservation_service 삭제
-        stage('Clean Workspace After Manifest Update') {
-            steps {
-                script {
-                    deleteDir()  // workspace 정리
+                    // ✅ 원격지에서 변경된 다른 매니페스트 파일들이 있을 경우 pull & rebase
+                    sh "git pull --rebase origin main || true"
+
+                    // ✅ push 실행
+                    sh "git push origin main"
                 }
             }
         }
     }
 
-    // 디스코드 알림
+    // ✅ Discord 알림 전송
     post {
         success {
             script {
-                def discordMessage = """{
-                    "username": "Jenkins",
-                    "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
-                    "embeds": [{
-                        "title": "✅ Jenkins Build 성공!",
-                        "description": "파이프라인 빌드가 성공적으로 완료되었습니다.",
-                        "color": 3066993,
-                        "fields": [
-                            {"name": "프로젝트", "value": "Reservation Service", "inline": true},
-                            {"name": "빌드 번호", "value": "${currentBuild.number}", "inline": true},
-                            {"name": "ECR 이미지", "value": "${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}", "inline": false},
-                            {"name": "커밋 로그", "value": "[GitHub Repository](${GITWEBADD})", "inline": false}
-                        ],
-                        "footer": {
-                            "text": "Jenkins CI/CD",
-                            "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
-                        },
-                        "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
-                    }]
-                }"""
+                withCredentials([string(credentialsId: 'jenkins-discord-webhook', variable: 'DISCORD_URL')]) {
+                    def discordMessage = """{
+                        "username": "Jenkins",
+                        "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
+                        "embeds": [{
+                            "title": "✅ Jenkins Build 성공!",
+                            "description": "파이프라인 빌드가 성공적으로 완료되었습니다.",
+                            "color": 3066993,
+                            "fields": [
+                                {
+                                    "name": "프로젝트",
+                                    "value": "Reservation Service",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "빌드 번호",
+                                    "value": "${currentBuild.number}",
+                                    "inline": true
+                                },
+                                {
+                                    "name": "ECR 이미지",
+                                    "value": "${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}",
+                                    "inline": false
+                                }
+                            ],
+                            "footer": {
+                                "text": "Jenkins CI/CD",
+                                "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
+                            },
+                            "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
+                        }]
+                    }"""
 
-                sh "curl -X POST -H 'Content-Type: application/json' -d '${discordMessage}' ${DISCORD_WEBHOOK}"
-            }
-        }
-        failure {
-            script {
-                def discordMessage = """{
-                    "username": "Jenkins",
-                    "avatar_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png",
-                    "embeds": [{
-                        "title": "❌ Jenkins Build 실패!",
-                        "description": "파이프라인 빌드에 실패하였습니다.",
-                        "color": 15158332,
-                        "fields": [
-                            {"name": "프로젝트", "value": "Reservation Service", "inline": true},
-                            {"name": "빌드 번호", "value": "${currentBuild.number}", "inline": true},
-                            {"name": "GitHub Repo", "value": "[Repository Link](${GITWEBADD})", "inline": false}
-                        ],
-                        "footer": {
-                            "text": "Jenkins CI/CD",
-                            "icon_url": "https://www.jenkins.io/images/logos/jenkins/jenkins.png"
-                        },
-                        "timestamp": "${new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))}"
-                    }]
-                }"""
-
-                sh "curl -X POST -H 'Content-Type: application/json' -d '${discordMessage}' ${DISCORD_WEBHOOK}"
+                    sh """
+                        curl -X POST -H "Content-Type: application/json" \
+                        -d '${discordMessage}' \
+                        ${DISCORD_URL}
+                    """
+                }
             }
         }
     }
