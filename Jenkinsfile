@@ -109,7 +109,7 @@ pipeline {
                     sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
 
                     // 변경 사항 반영
-                    sh "git add reservation.yaml"
+                    sh "git add ."
                     sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
 
                     // 디버깅용 브랜치 상태 확인
