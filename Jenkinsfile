@@ -48,12 +48,27 @@ pipeline {
         }
 
         // ✅ Docker Image 빌드 및 푸시
-        stage('Build & Push Docker Image') {
+        stage('AWS ECR Login') {
             steps {
                 script {
-                    sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number} ."
-                    sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIAL]]) {
+                        sh "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                    }
                 }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number} ."
+                sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:latest ."
+            }
+        }
+
+        stage('Push Docker Image to ECR') {
+            steps {
+                sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
+                sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:latest"
             }
         }
 
@@ -73,11 +88,18 @@ pipeline {
                 script {
                     sh 'git config --local user.email "${GITMAIL}"'
                     sh 'git config --local user.name "${GITNAME}"'
+
                     sh 'git fetch origin main'
                     sh 'git reset --hard origin/main'
+
+                    // 이미지 태그 업데이트
                     sh 'sed -i "s@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g" reservation.yaml'
+
+                    // 변경사항 커밋 및 푸시
                     sh 'git add reservation.yaml'
                     sh 'git commit -m "Update manifest with new image tag: ${currentBuild.number}" || true'
+
+                    // 변경사항이 있을 경우 --rebase
                     sh 'git pull --rebase --autostash origin main || true'
                     sh 'git push origin main'
                 }
