@@ -140,6 +140,9 @@ pipeline {
                     sh "git config --local user.email ${GITMAIL}"
                     sh "git config --local user.name ${GITNAME}"
 
+                    // 최신 변경 사항 가져오기
+                    sh "git pull --rebase origin main || true"
+
                     sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
 
                     sh "git add .gitignore reservation.yaml"
