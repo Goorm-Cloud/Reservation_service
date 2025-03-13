@@ -20,16 +20,16 @@ pipeline {
             }
         }
 
-        // ✅ .gitignore을 로컬에서만 적용
-        stage('Apply .gitignore Locally') {
-            steps {
-                script {
-                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
-                        sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
-                    }
-                }
-            }
-        }
+        //// ✅ .gitignore을 로컬에서만 적용
+        //stage('Apply .gitignore Locally') {
+        //    steps {
+        //        script {
+        //            withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
+        //                sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
+        //            }
+        //        }
+        //    }
+        //}
 
         // ✅ config.py & .env 파일 생성
         stage('Create config.py & .env') {
