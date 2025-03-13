@@ -83,9 +83,13 @@ pipeline {
                     sh "git config --local user.email ${GITMAIL}"
                     sh "git config --local user.name ${GITNAME}"
 
-                    // 최신 상태 유지
-                    h "git checkout main || git checkout -b main"
+                    // 최신 변경 사항 가져오기
+                    sh "git fetch origin main"
                     sh "git reset --hard origin/main"
+
+                    // ✅ 브랜치가 detached 상태가 아닐 경우 대비하여 main 브랜치 체크아웃
+                    sh "git checkout -B main origin/main"
+                    sh "git branch -M main"
 
                     // 이미지 태그 업데이트
                     sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
