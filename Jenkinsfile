@@ -79,16 +79,16 @@ pipeline {
             }
         }
 
-    //    // ✅ 매니페스트 레포지토리 체크아웃
-    //    stage('Checkout Manifest Repository') {
-    //        steps {
-    //            script {
-    //                checkout([$class: 'GitSCM', branches: [[name: '*/main']],
-    //                userRemoteConfigs: [[credentialsId: GITCREDENTIAL, url: GITSSHADD]]])
-    //            }
-    //        }
-    //    }
-    //
+        // ✅ 매니페스트 레포지토리 체크아웃
+        stage('Checkout Manifest Repository') {
+            steps {
+                script {
+                    checkout([$class: 'GitSCM', branches: [[name: '*/main']],
+                    userRemoteConfigs: [[credentialsId: GITCREDENTIAL, url: GITSSHADD]]])
+                }
+            }
+        }
+
     //    // ✅ 이미지 태그 변경
     //    stage('Update EKS Manifest') {
     //        steps {
