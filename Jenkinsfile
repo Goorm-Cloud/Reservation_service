@@ -47,38 +47,38 @@ pipeline {
             }
         }
 
-    //    // ✅ Docker Image 빌드 및 푸시
-    //    stage('AWS ECR Login') {
-    //        steps {
-    //            script {
-    //                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIAL]]) {
-    //                    sh "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
-    //                }
-    //            }
-    //        }
-    //    }
-    //
-    //    stage('Build Docker Image') {
-    //        steps {
-    //            sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number} ."
-    //            sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:latest ."
-    //        }
-    //    }
-    //
-    //    stage('Push Docker Image to ECR') {
-    //        steps {
-    //            sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
-    //            sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:latest"
-    //        }
-    //    }
-    //
-    //    stage('Delete Docker Image') {
-    //        steps {
-    //            sh "docker rmi ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
-    //            sh "docker rmi ${ECR_REGISTRY}/${ECR_REPO}:latest"
-    //        }
-    //    }
-    //
+        // ✅ Docker Image 빌드 및 푸시
+        stage('AWS ECR Login') {
+            steps {
+                script {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: AWS_CREDENTIAL]]) {
+                        sh "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin ${ECR_REGISTRY}"
+                    }
+                }
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number} ."
+                sh "docker build -t ${ECR_REGISTRY}/${ECR_REPO}:latest ."
+            }
+        }
+
+        stage('Push Docker Image to ECR') {
+            steps {
+                sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
+                sh "docker push ${ECR_REGISTRY}/${ECR_REPO}:latest"
+            }
+        }
+
+        stage('Delete Docker Image') {
+            steps {
+                sh "docker rmi ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}"
+                sh "docker rmi ${ECR_REGISTRY}/${ECR_REPO}:latest"
+            }
+        }
+
     //    // ✅ 매니페스트 레포지토리 체크아웃
     //    stage('Checkout Manifest Repository') {
     //        steps {
