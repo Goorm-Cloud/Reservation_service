@@ -148,7 +148,7 @@ pipeline {
 
                     sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
 
-                    sh "git add .gitignore reservation.yaml"
+                    sh "git add ."
                     sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
                     sh "git push --force origin main"
                 }
