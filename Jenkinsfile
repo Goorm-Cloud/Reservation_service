@@ -126,7 +126,7 @@ pipeline {
         stage('Restore .gitignore in Manifest Repo') {
             steps {
                 script {
-                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_FILE')]) {
+                    withCredentials([file(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_FILE')]) {
                         sh 'cp $GITIGNORE_FILE $WORKSPACE/.gitignore'  // .env file 복사
                         sh 'chmod 600 $WORKSPACE/.gitignore'
                     }
