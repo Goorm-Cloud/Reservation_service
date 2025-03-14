@@ -20,17 +20,6 @@ pipeline {
             }
         }
 
-
-        //stage('Apply .gitignore Locally') {
-        //    steps {
-        //        script {
-        //            withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
-        //                sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
-        //            }
-        //        }
-        //    }
-        //}
-
         // ✅ config.py & .env 파일 생성
         stage('Create config.py & .env') {
             steps {
@@ -105,6 +94,8 @@ pipeline {
                     sh "git pull --rebase origin main || true"
                     sh "git reset --hard origin/main"
 
+                    // .gitignore 파일을 credentail에서 등록
+                    // .gitignore_global 미등록시 해당 주석을 제거하여 민감정보 파일을 명시해주어야 함.
                     //withCredentials([file(credentialsId: 'gitignore_secret_file', variable: 'GITIGNORE_FILE')]) {
                     //    sh 'cp $GITIGNORE_FILE .gitignore'
                     //}
