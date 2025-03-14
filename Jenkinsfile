@@ -83,8 +83,8 @@ pipeline {
         stage('Checkout Manifest Repository') {
             steps {
                 script {
-                    // ✅ Untracked 파일 정리 (브랜치 변경 오류 방지)
-                    sh 'git clean -fd'
+                    // Untracked 파일 정리 (브랜치 변경 오류 방지) 근데 정리가 안됨
+                    // sh 'git clean -fd'
 
                     checkout([$class: 'GitSCM', branches: [[name: '*/main']],
                     userRemoteConfigs: [[credentialsId: GITCREDENTIAL, url: GITSSHADD]]])
@@ -109,22 +109,22 @@ pipeline {
                         sh 'cp $GITIGNORE_FILE .gitignore'
                     }
 
-                    //// 최신 커밋 확인
-                    //sh "git log -n 5 --oneline"
-                    //
-                    //// 이미지 태그 변경 (빌드 번호 적용)
-                    //sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
-                    //
-                    //// 변경 사항 반영
-                    //sh "git add ."
-                    //sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
-                    //
-                    //// 디버깅용 브랜치 상태 확인
-                    //sh "git branch"
-                    //sh "git status"
-                    //
-                    //// push 실행
-                    //sh "git push origin main"
+                    // 최신 커밋 확인
+                    sh "git log -n 5 --oneline"
+
+                    // 이미지 태그 변경 (빌드 번호 적용)
+                    sh "sed -i 's@image:.*@image: ${ECR_REGISTRY}/${ECR_REPO}:${currentBuild.number}@g' reservation.yaml"
+
+                    // 변경 사항 반영
+                    sh "git add ."
+                    sh "git commit -m 'Update manifest with new image tag: ${currentBuild.number}'"
+
+                    // 디버깅용 브랜치 상태 확인
+                    sh "git branch"
+                    sh "git status"
+
+                    // push 실행
+                    sh "git push origin main"
                 }
             }
         }
