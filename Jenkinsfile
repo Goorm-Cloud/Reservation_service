@@ -105,10 +105,8 @@ pipeline {
                     sh "git pull --rebase origin main || true"
                     sh "git reset --hard origin/main"
 
-                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
-                        sh '''
-                            echo "$GITIGNORE_CONTENT" | sed 's/\r$//' > .gitignore
-                        '''
+                    withCredentials([file(credentialsId: 'gitignore_file', variable: 'GITIGNORE_FILE')]) {
+                        sh 'cp $GITIGNORE_FILE .gitignore'
                     }
 
                     //// 최신 커밋 확인
