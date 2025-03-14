@@ -105,7 +105,7 @@ pipeline {
                     sh "git pull --rebase origin main || true"
                     sh "git reset --hard origin/main"
 
-                    withCredentials([file(credentialsId: 'gitignore_file', variable: 'GITIGNORE_FILE')]) {
+                    withCredentials([file(credentialsId: 'gitignore_secret_file', variable: 'GITIGNORE_FILE')]) {
                         sh 'cp $GITIGNORE_FILE .gitignore'
                     }
 
