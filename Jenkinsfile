@@ -20,16 +20,23 @@ pipeline {
             }
         }
 
-
-        //stage('Apply .gitignore Locally') {
-        //    steps {
-        //        script {
-        //            withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
-        //                sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
-        //            }
-        //        }
-        //    }
-        //}
+        stage('Apply .gitignore') {
+            steps {
+                script {
+                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
+                        sh '''
+                            echo "$GITIGNORE_CONTENT" > .gitignore
+                            git config --global core.excludesfile ~/.gitignore_global
+                            cat .gitignore >> ~/.gitignore_global
+                            git rm -r --cached .
+                            git add .gitignore
+                            git commit -m "Apply .gitignore rules"
+                            git push origin main
+                        '''
+                    }
+                }
+            }
+        }
 
         // ✅ config.py & .env 파일 생성
         stage('Create config.py & .env') {
@@ -83,8 +90,8 @@ pipeline {
         stage('Checkout Manifest Repository') {
             steps {
                 script {
-                    // Untracked 파일 정리 (브랜치 변경 오류 방지) 근데 정리가 안됨
-                    // sh 'git clean -fd'
+                    // ✅ Untracked 파일 정리 (브랜치 변경 오류 방지)
+                    sh 'git clean -fd'
 
                     checkout([$class: 'GitSCM', branches: [[name: '*/main']],
                     userRemoteConfigs: [[credentialsId: GITCREDENTIAL, url: GITSSHADD]]])
@@ -101,12 +108,12 @@ pipeline {
 
                     // 최신 변경 사항 가져오기 (덮어쓰기)
                     sh "git fetch origin main"
-                    sh "git switch main || git checkout main"  // 🔥 `detached HEAD` 상태 방지
+                    sh "git switch main || git checkout main"  // 🔥 detached HEAD 상태 방지
                     sh "git pull --rebase origin main || true"
                     sh "git reset --hard origin/main"
 
-                    withCredentials([file(credentialsId: 'gitignore_secret_file', variable: 'GITIGNORE_FILE')]) {
-                        sh 'cp $GITIGNORE_FILE .gitignore'
+                    withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
+                        sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
                     }
 
                     // 최신 커밋 확인
@@ -129,7 +136,6 @@ pipeline {
             }
         }
     }
-
 
     // ✅ 디스코드 알림
     post {
