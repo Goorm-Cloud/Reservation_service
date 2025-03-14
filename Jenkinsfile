@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    options {
+        timeout(time: 1, unit: 'HOURS')  // 빌드 타임아웃 설정
+        disableConcurrentBuilds()  // 동시 빌드 방지
+    }
     environment {
         GITNAME = 'rttitity'
         GITMAIL = 'jinwoo25803@gmail.com'
