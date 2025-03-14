@@ -106,7 +106,9 @@ pipeline {
                     sh "git reset --hard origin/main"
 
                     withCredentials([string(credentialsId: 'gitignore_secret', variable: 'GITIGNORE_CONTENT')]) {
-                        sh 'echo "$GITIGNORE_CONTENT" > .gitignore'
+                        sh '''
+                            echo "$GITIGNORE_CONTENT" | sed 's/\r$//' > .gitignore
+                        '''
                     }
 
                     //// 최신 커밋 확인
