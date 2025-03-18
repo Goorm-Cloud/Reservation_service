@@ -15,8 +15,8 @@ reservation_bp = Blueprint(
 def reserve_parking_route(parkinglot_id):  # ✅ 다른 함수명을 사용해서 충돌 방지
     return reserve_parking(parkinglot_id)
 
-@reservation_bp.route("/static/<path:filename>")
-def static_files(filename):
-    """ 정적 파일 제공 라우트 """
-    static_dir = os.path.join(current_app.root_path, "static")  # 최상위 디렉터리의 static 폴더
-    return send_from_directory(static_dir, filename)
+reservation_bp.route("/static/<path:filename>")(static_files)
+# def static_files(filename):
+#     """ 정적 파일 제공 라우트 """
+#     static_dir = os.path.join(current_app.root_path, "static")  # 최상위 디렉터리의 static 폴더
+#     return send_from_directory(static_dir, filename)

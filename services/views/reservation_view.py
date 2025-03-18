@@ -6,11 +6,11 @@ from datetime import datetime
 from services.reservation_form import ReservationForm
 
 
-# # 📌 정적 파일 제공
-# def static_files(filename):
-#     BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-#     STATIC_DIR = os.path.join(BASE_DIR, "reservation_service", "static")
-#     return send_from_directory(STATIC_DIR, filename)
+# 📌 정적 파일 제공
+def static_files(filename):
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    STATIC_DIR = os.path.join(BASE_DIR, "reservation_service", "static")
+    return send_from_directory(STATIC_DIR, filename)
 
 # 📌 주차장 예약 처리
 

@@ -4,8 +4,7 @@ from flask import Flask, url_for
 from services.common.models import db, migrate
 #from services.common.oauth import oauth
 
-#from services.admin_service.routes import admin_bp, login_bp
-#from services.map_service.routes import map_bp
+
 from services.routes import parkinglot_bp
 from services.reservation_route import reservation_bp
 # from services.reservation_detail_service.routes import reservation_detail_bp
@@ -45,8 +44,6 @@ def create_app():
     # 📌 DB 설정
     db.init_app(app)
     migrate.init_app(app, db)
-
-
 
 
     @app.route("/")

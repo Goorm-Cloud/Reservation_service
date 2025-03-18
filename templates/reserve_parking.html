@@ -4,17 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ parking_lot.parkinglot_name }} 예약</title>
-
-    <!-- 🚀 정적 파일 로드 경로 수정 -->
     <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/bootstrap.min.css') }}">
-
-    {% if request.path.startswith('/reservation') %}
-        <!-- ✅ 예약 페이지에서는 reservation 서비스의 정적 파일 사용 -->
-        <link rel="stylesheet" href="/reservation/static/css/reservation_style.css">
-    {% else %}
-        <!-- ✅ 기본 정적 파일 사용 -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/reservation_style.css') }}">
-    {% endif %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/reservation_style.css') }}">
 </head>
 <body>
     {% include "navbar.html" %}
@@ -53,15 +44,7 @@
         </div>
     </div>
 
-    <!-- 🚀 정적 파일 로드 경로 수정 -->
-    <script src="{{ url_for('static', filename='bootstrap/bootstrap.bundle.min.js') }}"></script>
-
-    {% if request.path.startswith('/reservation') %}
-        <!-- ✅ 예약 페이지에서는 reservation 서비스의 정적 파일 사용 -->
-        <script src="/reservation/static/js/reservation_scripts.js"></script>
-    {% else %}
-        <!-- ✅ 기본 정적 파일 사용 -->
-        <script src="{{ url_for('static', filename='js/reservation_scripts.js') }}"></script>
-    {% endif %}
+    <script src="{{ url_for('static', filename='/bootstrap/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='/js/reservation_scripts.js') }}"></script>
 </body>
 </html>
