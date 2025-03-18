@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ parking_lot.parkinglot_name }} 예약</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/reservation_style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('reservation_bp.static', filename='css/reservation_style.css') }}">
 </head>
 <body>
     {% include "navbar.html" %}
@@ -45,5 +45,6 @@
     </div>
 
     <script src="{{ url_for('static', filename='/bootstrap/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ url_for('reservation_bp.static', filename='js/reservation_scripts.js') }}"></script></body>
+    <script src="{{ url_for('reservation_bp.static', filename='js/reservation_scripts.js') }}"></script>
+</body>
 </html>
