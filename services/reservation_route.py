@@ -6,7 +6,8 @@ import os
 reservation_bp = Blueprint(
     'reservation_bp',
     __name__,
-    static_folder=None
+    static_folder="static",
+    template_folder="templates"
 )
 
 # 📌 예약 페이지 라우트 등록
@@ -19,7 +20,3 @@ def static_files(filename):
     """ 정적 파일 제공 라우트 """
     static_dir = os.path.join(current_app.root_path, "static")  # 최상위 디렉터리의 static 폴더
     return send_from_directory(static_dir, filename)
-
-# map_bp.route("/", endpoint="index")(home_view)
-# map_bp.route("/static/<path:filename>")(static_files)
-# map_bp.route("/api/parking-lots")(get_parking_lots)
