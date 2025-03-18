@@ -12,7 +12,11 @@ from services.reservation_route import reservation_bp
 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask(
+        __name__,
+        static_folder="static",  # Flask가 최상위 디렉터리의 static 폴더 사용
+        template_folder="templates"
+        )
     app.config.from_pyfile('config.py')
     app.secret_key = os.urandom(24)
 
