@@ -9,7 +9,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 method: "POST",
                 body: new FormData(this)
             })
-            .then(response => response.json())
+            .then(response => response.text())
+            .then(text => {
+                console.log("서버 응답:", text);  // 서버 응답 확인
+                return JSON.parse(text);  // JSON으로 변환 시도
+            })
             .then(data => {
                 if (data.success) {
                     alert(data.message); // ✅ 한글 메시지 정상 출력
