@@ -27,10 +27,13 @@ def reserve_parking(parkinglot_id):
     if not parking_lot:
         return jsonify({"success": False, "message": "❌ 주차장을 찾을 수 없습니다."}), 404
 
-    form = ReservationForm()
+    # ✅ 요청이 AJAX (fetch)라면 JSON 반환
+    if request.is_json:
+        data = request.get_json()
+        email = data.get("email")
 
-    if form.validate_on_submit():  # ✅ FlaskForm 검증 추가
-        email = form.email.data  # FlaskForm에서 입력 데이터 가져오기
+        if not email:
+            return jsonify({"success": False, "message": "이메일을 입력하세요."}), 400
 
         # 🚀 이메일로 사용자 조회
         user = db.session.query(User).filter_by(email=email).first()
@@ -52,4 +55,5 @@ def reserve_parking(parkinglot_id):
 
         return jsonify({"success": True, "message": "✅ 예약이 완료되었습니다!"})
 
-    return render_template('reserve_parking.html', parking_lot=parking_lot, form=form)
+    # ✅ 일반 요청 (브라우저에서 접근)인 경우 HTML 반환
+    return render_template('reserve_parking.html', parking_lot=parking_lot, form=ReservationForm())
